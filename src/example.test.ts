@@ -1,4 +1,6 @@
-import { Entity, MikroORM, PrimaryKey, Property } from '@mikro-orm/sqlite';
+import {Entity, MikroORM, PrimaryKey, Property, types} from '@mikro-orm/sqlite';
+
+interface addressType {street:string|null, zip:string|null}
 
 @Entity()
 class User {
@@ -12,9 +14,13 @@ class User {
   @Property({ unique: true })
   email: string;
 
-  constructor(name: string, email: string) {
+  @Property({fieldName: 'address', type: types.json, nullable: false})
+  address: addressType | null;
+
+  constructor(name: string, email: string, address: addressType) {
     this.name = name;
     this.email = email;
+    this.address = address;
   }
 
 }
@@ -36,16 +42,17 @@ afterAll(async () => {
 });
 
 test('basic CRUD example', async () => {
-  orm.em.create(User, { name: 'Foo', email: 'foo' });
+  orm.em.create(User, { name: 'Foo', email: 'foo', address: {zip:null, street: null} });
   await orm.em.flush();
   orm.em.clear();
 
   const user = await orm.em.findOneOrFail(User, { email: 'foo' });
   expect(user.name).toBe('Foo');
   user.name = 'Bar';
-  orm.em.remove(user);
+  user.address = {street: null, zip:null}; // <-- Please note the different order of the properties
   await orm.em.flush();
+  // update `user` set `name` = 'Bar', `address` = '{"street":null,"zip":null}' where `id` = 1
 
-  const count = await orm.em.count(User, { email: 'foo' });
-  expect(count).toBe(0);
+  expect(user.email).toBe('foo');
+  expect(user.name).toBe('Bar');
 });
