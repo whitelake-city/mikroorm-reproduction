@@ -49,8 +49,9 @@ test('basic CRUD example', async () => {
   const user = await orm.em.findOneOrFail(User, { email: 'foo' });
   expect(user.name).toBe('Foo');
   user.name = 'Bar';
-  user.address = {zip:null, street: null}; // <-- with postgres I see an update for the column
+  user.address = {street: null, zip:null}; // <-- Please note the different order of the properties
   await orm.em.flush();
+  // update `user` set `name` = 'Bar', `address` = '{"street":null,"zip":null}' where `id` = 1
 
   expect(user.email).toBe('foo');
   expect(user.name).toBe('Bar');
